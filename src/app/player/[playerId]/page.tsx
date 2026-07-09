@@ -3,9 +3,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { KarteFormData, KarteRecord, PlayerInfo } from "@/types/karte";
+import { KarteFormData, KarteRecord, PersonalKarteRecord, PlayerInfo, RaceResult } from "@/types/karte";
 import KarteForm from "@/components/KarteForm";
 import MedicalKarteCard from "@/components/MedicalKarteCard";
+import PersonalKarteCard from "@/components/PersonalKarteCard";
+import RaceResultCard from "@/components/RaceResultCard";
 import MiniCalendar from "@/components/MiniCalendar";
 
 function Spinner() {
@@ -17,12 +19,19 @@ function Spinner() {
   );
 }
 
+type HistoryItem =
+  | { type: "medical"; sortKey: string; data: KarteRecord }
+  | { type: "personal"; sortKey: string; data: PersonalKarteRecord }
+  | { type: "race"; sortKey: string; data: RaceResult };
+
 export default function KarteRecordPage() {
   const params = useParams();
   const playerId = params.playerId as string;
 
   const [player, setPlayer] = useState<PlayerInfo | null>(null);
   const [records, setRecords] = useState<KarteRecord[]>([]);
+  const [personalRecords, setPersonalRecords] = useState<PersonalKarteRecord[]>([]);
+  const [raceResults, setRaceResults] = useState<RaceResult[]>([]);
   const [loadingPlayer, setLoadingPlayer] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -30,10 +39,8 @@ export default function KarteRecordPage() {
   const [activeTab, setActiveTab] = useState<"form" | "history">("form");
 
   const karteDates = records.map((r) => r.createdAt.slice(0, 10));
-
-  const filteredRecords = selectedDate
-    ? records.filter((r) => r.createdAt.startsWith(selectedDate))
-    : records;
+  const personalDates = personalRecords.map((r) => r.createdAt.slice(0, 10));
+  const raceDates = raceResults.map((r) => r.date).filter(Boolean);
 
   const karteIndexMap = new Map(
     records
@@ -42,11 +49,33 @@ export default function KarteRecordPage() {
       .map((k, i) => [k.id, i])
   );
 
+  const allItems: HistoryItem[] = [
+    ...records.map((r) => ({ type: "medical" as const, sortKey: r.createdAt, data: r })),
+    ...personalRecords.map((r) => ({ type: "personal" as const, sortKey: r.createdAt, data: r })),
+    ...raceResults.map((r) => ({ type: "race" as const, sortKey: r.date, data: r })),
+  ].sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+
+  const filteredItems = selectedDate
+    ? allItems.filter((item) =>
+        item.type === "race" ? item.data.date === selectedDate : item.data.createdAt.startsWith(selectedDate)
+      )
+    : allItems;
+
   useEffect(() => {
     fetch(`/api/players/${playerId}`)
       .then((r) => r.json())
       .then(setPlayer)
       .finally(() => setLoadingPlayer(false));
+
+    fetch(`/api/race-results?playerId=${encodeURIComponent(playerId)}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setRaceResults)
+      .catch(() => {});
+
+    fetch(`/api/personal-karte?playerId=${encodeURIComponent(playerId)}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setPersonalRecords)
+      .catch(() => {});
   }, [playerId]);
 
   const fetchRecords = useCallback(async () => {
@@ -91,22 +120,28 @@ export default function KarteRecordPage() {
       <p className="text-sm text-red-400">{historyError}</p>
       <button onClick={fetchRecords} className="text-xs text-green-600 underline">再試行</button>
     </div>
-  ) : records.length === 0 ? (
+  ) : allItems.length === 0 ? (
     <div className="flex flex-col items-center justify-center h-32 text-gray-300 gap-3">
       <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
       <p className="text-sm">まだ記録はありません</p>
     </div>
-  ) : filteredRecords.length === 0 ? (
+  ) : filteredItems.length === 0 ? (
     <p className="text-sm text-gray-400 text-center py-6">
       {selectedDate?.replace(/-/g, "/")} の記録はありません
     </p>
   ) : (
     <div className="flex flex-col gap-3">
-      {filteredRecords.map((record) => (
-        <MedicalKarteCard key={record.id} record={record} index={karteIndexMap.get(record.id) ?? 0} />
-      ))}
+      {filteredItems.map((item) => {
+        if (item.type === "medical") {
+          return <MedicalKarteCard key={item.data.id} record={item.data} index={karteIndexMap.get(item.data.id) ?? 0} />;
+        }
+        if (item.type === "personal") {
+          return <PersonalKarteCard key={item.data.id} record={item.data} />;
+        }
+        return <RaceResultCard key={item.data.id} result={item.data} />;
+      })}
     </div>
   );
 
@@ -115,6 +150,8 @@ export default function KarteRecordPage() {
       {!loadingHistory && !historyError && (
         <MiniCalendar
           karteDates={karteDates}
+          personalDates={personalDates}
+          raceDates={raceDates}
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
         />
@@ -163,11 +200,11 @@ export default function KarteRecordPage() {
           }`}
         >
           記録
-          {records.length > 0 && (
+          {allItems.length > 0 && (
             <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${
               activeTab === "history" ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"
             }`}>
-              {records.length}
+              {allItems.length}
             </span>
           )}
         </button>
@@ -206,11 +243,23 @@ export default function KarteRecordPage() {
           <div className="px-6 py-4 border-b border-gray-200 bg-white">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-gray-700">記録</h2>
-              {records.length > 0 && (
-                <span className="bg-green-100 text-green-600 text-xs font-semibold px-2 py-0.5 rounded-full">
-                  カルテ {records.length}件
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {raceResults.length > 0 && (
+                  <span className="bg-orange-100 text-orange-600 text-xs font-semibold px-2 py-0.5 rounded-full">
+                    大会 {raceResults.length}件
+                  </span>
+                )}
+                {personalRecords.length > 0 && (
+                  <span className="bg-blue-100 text-blue-600 text-xs font-semibold px-2 py-0.5 rounded-full">
+                    パーソナル {personalRecords.length}件
+                  </span>
+                )}
+                {records.length > 0 && (
+                  <span className="bg-green-100 text-green-600 text-xs font-semibold px-2 py-0.5 rounded-full">
+                    メディカル {records.length}件
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           {historyPanel}

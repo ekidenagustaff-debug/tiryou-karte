@@ -4,6 +4,8 @@ import { useState } from "react";
 
 interface MiniCalendarProps {
   karteDates: string[];
+  raceDates?: string[];
+  personalDates?: string[];
   selectedDate: string | null;
   onSelectDate: (date: string | null) => void;
 }
@@ -16,6 +18,8 @@ function toDateStr(year: number, month: number, day: number): string {
 
 export default function MiniCalendar({
   karteDates,
+  raceDates = [],
+  personalDates = [],
   selectedDate,
   onSelectDate,
 }: MiniCalendarProps) {
@@ -25,6 +29,8 @@ export default function MiniCalendar({
 
   const todayStr = toDateStr(today.getFullYear(), today.getMonth(), today.getDate());
   const karteSet = new Set(karteDates);
+  const raceSet = new Set(raceDates);
+  const personalSet = new Set(personalDates);
 
   const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -61,6 +67,18 @@ export default function MiniCalendar({
         </button>
       </div>
 
+      <div className="flex items-center gap-3 mb-2 px-0.5">
+        <span className="flex items-center gap-1 text-[9px] text-gray-400">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />メディカル
+        </span>
+        <span className="flex items-center gap-1 text-[9px] text-gray-400">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />パーソナル
+        </span>
+        <span className="flex items-center gap-1 text-[9px] text-gray-400">
+          <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />大会
+        </span>
+      </div>
+
       <div className="grid grid-cols-7 mb-1">
         {DAY_NAMES.map((d, i) => (
           <div
@@ -74,15 +92,18 @@ export default function MiniCalendar({
 
       <div className="grid grid-cols-7 gap-y-0.5">
         {cells.map((day, i) => {
-          if (!day) return <div key={i} className="min-h-[2.75rem]" />;
+          if (!day) return <div key={i} className="min-h-[3.25rem]" />;
           const dateStr = toDateStr(viewYear, viewMonth, day);
           const hasKarte = karteSet.has(dateStr);
-          const isSelected = selectedDate === dateStr && hasKarte;
+          const hasRace = raceSet.has(dateStr);
+          const hasPersonal = personalSet.has(dateStr);
+          const hasActivity = hasKarte || hasRace || hasPersonal;
+          const isSelected = selectedDate === dateStr && hasActivity;
           const isToday = dateStr === todayStr;
           const col = i % 7;
 
           const handleClick = () => {
-            if (!hasKarte) return;
+            if (!hasActivity) return;
             onSelectDate(isSelected ? null : dateStr);
           };
 
@@ -92,7 +113,7 @@ export default function MiniCalendar({
             ? "text-red-400"
             : col === 6
             ? "text-blue-500"
-            : hasKarte
+            : hasActivity
             ? "text-gray-700"
             : "text-gray-300";
 
@@ -100,26 +121,34 @@ export default function MiniCalendar({
             <button
               key={i}
               onClick={handleClick}
-              disabled={!hasKarte}
+              disabled={!hasActivity}
               className={`
-                flex flex-col items-center pt-1 pb-1 px-0.5 w-full rounded transition-colors min-h-[2.75rem]
+                flex flex-col items-center pt-1 pb-1 px-0.5 w-full rounded transition-colors min-h-[3.25rem]
                 ${isSelected ? "bg-green-600" : ""}
-                ${!isSelected && hasKarte ? "hover:bg-green-50 cursor-pointer" : ""}
-                ${!hasKarte ? "cursor-default" : ""}
+                ${!isSelected && hasActivity ? "hover:bg-green-50 cursor-pointer" : ""}
+                ${!hasActivity ? "cursor-default" : ""}
                 ${!isSelected && isToday ? "ring-1 ring-green-400" : ""}
               `}
             >
               <span className={`text-[11px] font-medium leading-none mb-0.5 ${textColor}`}>{day}</span>
 
-              {hasKarte && (
-                <span
-                  className={`text-[7px] font-bold text-center px-0.5 py-0.5 rounded leading-none w-full truncate ${
-                    isSelected ? "bg-white/20 text-white" : "bg-green-100 text-green-600"
-                  }`}
-                >
-                  メディカル
-                </span>
-              )}
+              <div className="flex flex-col gap-0.5 w-full">
+                {hasKarte && (
+                  <span className={`text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate ${isSelected ? "bg-white/20 text-white" : "bg-green-100 text-green-600"}`}>
+                    メディカル
+                  </span>
+                )}
+                {hasPersonal && (
+                  <span className={`text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate ${isSelected ? "bg-white/20 text-white" : "bg-blue-100 text-blue-600"}`}>
+                    パーソナル
+                  </span>
+                )}
+                {hasRace && (
+                  <span className={`text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate ${isSelected ? "bg-white/20 text-white" : "bg-orange-100 text-orange-600"}`}>
+                    大会
+                  </span>
+                )}
+              </div>
             </button>
           );
         })}

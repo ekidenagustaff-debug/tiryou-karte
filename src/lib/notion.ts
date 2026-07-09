@@ -1,10 +1,12 @@
 import { Client } from "@notionhq/client";
-import { KarteRecord, KarteFormData, PlayerInfo } from "@/types/karte";
+import { KarteRecord, KarteFormData, PlayerInfo, RaceResult, PersonalKarteRecord } from "@/types/karte";
 import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const DATABASE_ID = process.env.NOTION_MEDICAL_KARTE_DATABASE_ID!;
 const MEMBERS_DATABASE_ID = process.env.NOTION_MEMBERS_DATABASE_ID!;
+const RACE_RESULTS_DATABASE_ID = process.env.NOTION_RACE_RESULTS_DATABASE_ID!;
+const PERSONAL_KARTE_DATABASE_ID = process.env.NOTION_PERSONAL_KARTE_DATABASE_ID!;
 
 function richText(value: string) {
   return [{ text: { content: value } }];
@@ -17,16 +19,20 @@ function extractText(prop: PageObjectResponse["properties"][string]): string {
   return "";
 }
 
+function extractTags(prop: PageObjectResponse["properties"][string]): string[] {
+  if (prop.type === "multi_select") return prop.multi_select.map((t) => t.name);
+  return [];
+}
+
+function extractRelationId(prop: PageObjectResponse["properties"][string]): string | undefined {
+  return prop?.type === "relation" && prop.relation.length > 0 ? prop.relation[0].id : undefined;
+}
+
 function pageToKarte(page: PageObjectResponse): KarteRecord {
   const p = page.properties;
-  const buinProp = p["部員"];
-  const playerId =
-    buinProp?.type === "relation" && buinProp.relation.length > 0
-      ? buinProp.relation[0].id
-      : undefined;
   return {
     id: page.id,
-    playerId,
+    playerId: extractRelationId(p["部員"]),
     clientName: extractText(p["クライアント名"]),
     trainerName: extractText(p["担当トレーナー名"]),
     chiefComplaint: extractText(p["主訴"]),
@@ -126,4 +132,66 @@ export async function getKarteDatesByPlayer(playerId: string): Promise<string[]>
   const records = await getKartesByPlayer(playerId);
   const dates = new Set(records.map((r) => r.createdAt.slice(0, 10)));
   return Array.from(dates).sort();
+}
+
+function pageToRaceResult(page: PageObjectResponse): RaceResult {
+  const p = page.properties;
+  const dateProp = p["日付"];
+  const date =
+    dateProp?.type === "date" && dateProp.date?.start ? dateProp.date.start.slice(0, 10) : "";
+  const rankProp = p["順位"];
+  const rank = rankProp?.type === "number" && rankProp.number != null ? rankProp.number : undefined;
+  return {
+    id: page.id,
+    competitionName: extractText(p["大会名"]),
+    eventName: extractText(p["種目（表示）"]),
+    date,
+    result: extractText(p["記録"]),
+    rank,
+    flags: p["フラグ"] ? extractTags(p["フラグ"]) : [],
+    venue: extractText(p["会場"]),
+    notes: extractText(p["備考"]),
+    category: extractText(p["種別"]),
+  };
+}
+
+export async function getRaceResultsByPlayer(playerId: string): Promise<RaceResult[]> {
+  const response = await notion.databases.query({
+    database_id: RACE_RESULTS_DATABASE_ID,
+    filter: {
+      property: "選手名",
+      relation: { contains: playerId },
+    },
+    sorts: [{ property: "日付", direction: "descending" }],
+    page_size: 100,
+  });
+  return (response.results as PageObjectResponse[]).map(pageToRaceResult);
+}
+
+function pageToPersonalKarte(page: PageObjectResponse): PersonalKarteRecord {
+  const p = page.properties;
+  return {
+    id: page.id,
+    playerId: extractRelationId(p["部員"]),
+    clientName: extractText(p["クライアント名"]),
+    trainerName: extractText(p["担当トレーナー名"]),
+    chiefComplaint: extractText(p["主訴"]),
+    trainingContent: extractText(p["トレーニング内容"]),
+    overallAssessment: extractText(p["総評"]),
+    tags: p["タグ"] ? extractTags(p["タグ"]) : [],
+    createdAt: page.created_time,
+  };
+}
+
+export async function getPersonalKartesByPlayer(playerId: string): Promise<PersonalKarteRecord[]> {
+  const response = await notion.databases.query({
+    database_id: PERSONAL_KARTE_DATABASE_ID,
+    filter: {
+      property: "部員",
+      relation: { contains: playerId },
+    },
+    sorts: [{ timestamp: "created_time", direction: "descending" }],
+    page_size: 100,
+  });
+  return (response.results as PageObjectResponse[]).map(pageToPersonalKarte);
 }

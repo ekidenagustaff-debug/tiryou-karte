@@ -31,3 +31,28 @@ export interface PlayerInfo {
   grade?: string;
   gender?: string;
 }
+
+export interface RaceResult {
+  id: string;
+  competitionName: string;
+  eventName: string;
+  date: string; // "YYYY-MM-DD"
+  result: string;
+  rank?: number;
+  flags: string[];
+  venue: string;
+  notes: string;
+  category: string;
+}
+
+export interface PersonalKarteRecord {
+  id: string;
+  playerId?: string;
+  clientName: string;
+  trainerName: string;
+  chiefComplaint: string;
+  trainingContent: string;
+  overallAssessment: string;
+  tags: string[];
+  createdAt: string;
+}
