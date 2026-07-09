@@ -30,7 +30,7 @@ function formatRaceDate(dateStr: string): string {
 
 export default function RaceResultCard({ result }: RaceResultCardProps) {
   return (
-    <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 shadow-sm">
+    <div data-anchor-id={`race-${result.id}`} className="bg-orange-50 border border-orange-100 rounded-xl p-4 shadow-sm">
       <div className="flex items-center gap-2 mb-3">
         <span className="bg-orange-100 text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full">大会</span>
         <span className="text-xs text-gray-400">{formatRaceDate(result.date)}</span>

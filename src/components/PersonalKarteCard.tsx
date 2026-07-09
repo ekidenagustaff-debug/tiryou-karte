@@ -21,7 +21,7 @@ function formatTime(iso: string): string {
 
 export default function PersonalKarteCard({ record }: PersonalKarteCardProps) {
   return (
-    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 shadow-sm">
+    <div data-anchor-id={`personal-${record.id}`} className="bg-blue-50 border border-blue-100 rounded-xl p-4 shadow-sm">
       <div className="flex items-center gap-2 mb-3">
         <span className="bg-blue-100 text-blue-600 text-xs font-bold px-2 py-0.5 rounded-full">パーソナル</span>
         <span className="text-xs text-gray-400">

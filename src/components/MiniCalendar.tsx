@@ -8,6 +8,8 @@ interface MiniCalendarProps {
   personalDates?: string[];
   selectedDate: string | null;
   onSelectDate: (date: string | null) => void;
+  onJumpToRace?: (date: string) => void;
+  onJumpToPersonal?: (date: string) => void;
 }
 
 const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
@@ -22,6 +24,8 @@ export default function MiniCalendar({
   personalDates = [],
   selectedDate,
   onSelectDate,
+  onJumpToRace,
+  onJumpToPersonal,
 }: MiniCalendarProps) {
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -103,8 +107,17 @@ export default function MiniCalendar({
           const col = i % 7;
 
           const handleClick = () => {
-            if (!hasActivity) return;
-            onSelectDate(isSelected ? null : dateStr);
+            if (hasRace) {
+              onJumpToRace?.(dateStr);
+              return;
+            }
+            if (hasPersonal) {
+              onJumpToPersonal?.(dateStr);
+              return;
+            }
+            if (hasKarte) {
+              onSelectDate(isSelected ? null : dateStr);
+            }
           };
 
           const textColor = isSelected

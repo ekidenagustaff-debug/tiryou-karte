@@ -97,6 +97,32 @@ export default function KarteRecordPage() {
     fetchRecords();
   }, [fetchRecords]);
 
+  const jumpToCard = useCallback((anchorId: string) => {
+    requestAnimationFrame(() => {
+      const candidates = document.querySelectorAll<HTMLElement>(`[data-anchor-id="${anchorId}"]`);
+      const visible = Array.from(candidates).find((el) => el.offsetParent !== null);
+      (visible ?? candidates[0])?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
+  const jumpToRace = useCallback(
+    (dateStr: string) => {
+      const target = raceResults.find((r) => r.date === dateStr);
+      if (!target) return;
+      jumpToCard(`race-${target.id}`);
+    },
+    [raceResults, jumpToCard]
+  );
+
+  const jumpToPersonal = useCallback(
+    (dateStr: string) => {
+      const target = personalRecords.find((r) => r.createdAt.startsWith(dateStr));
+      if (!target) return;
+      jumpToCard(`personal-${target.id}`);
+    },
+    [personalRecords, jumpToCard]
+  );
+
   const handleSubmit = async (data: KarteFormData) => {
     const res = await fetch("/api/karte", {
       method: "POST",
@@ -154,6 +180,8 @@ export default function KarteRecordPage() {
           raceDates={raceDates}
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
+          onJumpToRace={jumpToRace}
+          onJumpToPersonal={jumpToPersonal}
         />
       )}
       {historyContent}
