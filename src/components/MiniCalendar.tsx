@@ -6,10 +6,12 @@ interface MiniCalendarProps {
   karteDates: string[];
   raceDates?: string[];
   personalDates?: string[];
+  bloodDates?: string[];
   selectedDate: string | null;
   onSelectDate: (date: string | null) => void;
   onJumpToRace?: (date: string) => void;
   onJumpToPersonal?: (date: string) => void;
+  onJumpToBlood?: (date: string) => void;
 }
 
 const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
@@ -22,10 +24,12 @@ export default function MiniCalendar({
   karteDates,
   raceDates = [],
   personalDates = [],
+  bloodDates = [],
   selectedDate,
   onSelectDate,
   onJumpToRace,
   onJumpToPersonal,
+  onJumpToBlood,
 }: MiniCalendarProps) {
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -35,6 +39,7 @@ export default function MiniCalendar({
   const karteSet = new Set(karteDates);
   const raceSet = new Set(raceDates);
   const personalSet = new Set(personalDates);
+  const bloodSet = new Set(bloodDates);
 
   const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -81,6 +86,9 @@ export default function MiniCalendar({
         <span className="flex items-center gap-1 text-[9px] text-gray-400">
           <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />大会
         </span>
+        <span className="flex items-center gap-1 text-[9px] text-gray-400">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500" />血液検査
+        </span>
       </div>
 
       <div className="grid grid-cols-7 mb-1">
@@ -101,7 +109,8 @@ export default function MiniCalendar({
           const hasKarte = karteSet.has(dateStr);
           const hasRace = raceSet.has(dateStr);
           const hasPersonal = personalSet.has(dateStr);
-          const hasActivity = hasKarte || hasRace || hasPersonal;
+          const hasBlood = bloodSet.has(dateStr);
+          const hasActivity = hasKarte || hasRace || hasPersonal || hasBlood;
           const isSelected = selectedDate === dateStr && hasActivity;
           const isToday = dateStr === todayStr;
           const col = i % 7;
@@ -109,6 +118,10 @@ export default function MiniCalendar({
           const handleClick = () => {
             if (hasRace) {
               onJumpToRace?.(dateStr);
+              return;
+            }
+            if (hasBlood) {
+              onJumpToBlood?.(dateStr);
               return;
             }
             if (hasPersonal) {
@@ -159,6 +172,11 @@ export default function MiniCalendar({
                 {hasRace && (
                   <span className={`text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate ${isSelected ? "bg-white/20 text-white" : "bg-orange-100 text-orange-600"}`}>
                     大会
+                  </span>
+                )}
+                {hasBlood && (
+                  <span className={`text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate ${isSelected ? "bg-white/20 text-white" : "bg-red-100 text-red-600"}`}>
+                    血液検査
                   </span>
                 )}
               </div>

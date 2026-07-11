@@ -56,3 +56,21 @@ export interface PersonalKarteRecord {
   tags: string[];
   createdAt: string;
 }
+
+export interface BloodTestRecord {
+  id: string;
+  playerId?: string;
+  clientName: string;
+  testDate: string; // "YYYY-MM-DD"
+  memo: string;
+  values: Record<string, number>;
+  createdAt: string;
+}
+
+export interface BloodTestFormData {
+  playerId: string;
+  clientName: string;
+  testDate: string;
+  memo: string;
+  values: Record<string, number>;
+}

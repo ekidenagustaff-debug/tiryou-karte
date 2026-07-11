@@ -1,12 +1,14 @@
 import { Client } from "@notionhq/client";
-import { KarteRecord, KarteFormData, PlayerInfo, RaceResult, PersonalKarteRecord } from "@/types/karte";
+import { KarteRecord, KarteFormData, PlayerInfo, RaceResult, PersonalKarteRecord, BloodTestRecord, BloodTestFormData } from "@/types/karte";
 import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
+import { ALL_BLOOD_TEST_ITEMS } from "@/lib/bloodTestItems";
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const DATABASE_ID = process.env.NOTION_MEDICAL_KARTE_DATABASE_ID!;
 const MEMBERS_DATABASE_ID = process.env.NOTION_MEMBERS_DATABASE_ID!;
 const RACE_RESULTS_DATABASE_ID = process.env.NOTION_RACE_RESULTS_DATABASE_ID!;
 const PERSONAL_KARTE_DATABASE_ID = process.env.NOTION_PERSONAL_KARTE_DATABASE_ID!;
+const BLOOD_TEST_DATABASE_ID = process.env.NOTION_BLOOD_TEST_DATABASE_ID!;
 
 function richText(value: string) {
   return [{ text: { content: value } }];
@@ -26,6 +28,14 @@ function extractTags(prop: PageObjectResponse["properties"][string]): string[] {
 
 function extractRelationId(prop: PageObjectResponse["properties"][string]): string | undefined {
   return prop?.type === "relation" && prop.relation.length > 0 ? prop.relation[0].id : undefined;
+}
+
+function extractNumber(prop: PageObjectResponse["properties"][string]): number | undefined {
+  return prop?.type === "number" && prop.number != null ? prop.number : undefined;
+}
+
+function extractDate(prop: PageObjectResponse["properties"][string]): string {
+  return prop?.type === "date" && prop.date?.start ? prop.date.start.slice(0, 10) : "";
 }
 
 function pageToKarte(page: PageObjectResponse): KarteRecord {
@@ -194,4 +204,62 @@ export async function getPersonalKartesByPlayer(playerId: string): Promise<Perso
     page_size: 100,
   });
   return (response.results as PageObjectResponse[]).map(pageToPersonalKarte);
+}
+
+function pageToBloodTest(page: PageObjectResponse): BloodTestRecord {
+  const p = page.properties;
+  const values: Record<string, number> = {};
+  for (const item of ALL_BLOOD_TEST_ITEMS) {
+    const value = p[item.key] ? extractNumber(p[item.key]) : undefined;
+    if (value != null) values[item.key] = value;
+  }
+  const testDate = extractDate(p["採血日"]) || page.created_time.slice(0, 10);
+  return {
+    id: page.id,
+    playerId: extractRelationId(p["部員"]),
+    clientName: extractText(p["クライアント名"]),
+    testDate,
+    memo: extractText(p["メモ"]),
+    values,
+    createdAt: page.created_time,
+  };
+}
+
+export async function createBloodTestRecord(data: BloodTestFormData): Promise<BloodTestRecord> {
+  const properties: Record<string, unknown> = {
+    "クライアント名": { title: richText(data.clientName) },
+    "採血日": { date: { start: data.testDate } },
+    "メモ": { rich_text: richText(data.memo) },
+    "部員": { relation: [{ id: data.playerId }] },
+  };
+  for (const item of ALL_BLOOD_TEST_ITEMS) {
+    const value = data.values[item.key];
+    if (value != null && !Number.isNaN(value)) {
+      properties[item.key] = { number: value };
+    }
+  }
+  const response = (await notion.pages.create({
+    parent: { database_id: BLOOD_TEST_DATABASE_ID },
+    properties: properties as Parameters<typeof notion.pages.create>[0]["properties"],
+  })) as PageObjectResponse;
+  return pageToBloodTest(response);
+}
+
+export async function getBloodTestsByPlayer(playerId: string): Promise<BloodTestRecord[]> {
+  const response = await notion.databases.query({
+    database_id: BLOOD_TEST_DATABASE_ID,
+    filter: {
+      property: "部員",
+      relation: { contains: playerId },
+    },
+    sorts: [{ property: "採血日", direction: "descending" }],
+    page_size: 100,
+  });
+  return (response.results as PageObjectResponse[]).map(pageToBloodTest);
+}
+
+export async function getBloodTestDatesByPlayer(playerId: string): Promise<string[]> {
+  const records = await getBloodTestsByPlayer(playerId);
+  const dates = new Set(records.map((r) => r.testDate));
+  return Array.from(dates).sort();
 }
