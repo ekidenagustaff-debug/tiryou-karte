@@ -66,11 +66,3 @@ export interface BloodTestRecord {
   values: Record<string, number>;
   createdAt: string;
 }
-
-export interface BloodTestFormData {
-  playerId: string;
-  clientName: string;
-  testDate: string;
-  memo: string;
-  values: Record<string, number>;
-}

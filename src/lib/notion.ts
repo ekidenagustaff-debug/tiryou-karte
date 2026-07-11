@@ -1,5 +1,5 @@
 import { Client } from "@notionhq/client";
-import { KarteRecord, KarteFormData, PlayerInfo, RaceResult, PersonalKarteRecord, BloodTestRecord, BloodTestFormData } from "@/types/karte";
+import { KarteRecord, KarteFormData, PlayerInfo, RaceResult, PersonalKarteRecord, BloodTestRecord } from "@/types/karte";
 import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 import { ALL_BLOOD_TEST_ITEMS } from "@/lib/bloodTestItems";
 
@@ -223,26 +223,6 @@ function pageToBloodTest(page: PageObjectResponse): BloodTestRecord {
     values,
     createdAt: page.created_time,
   };
-}
-
-export async function createBloodTestRecord(data: BloodTestFormData): Promise<BloodTestRecord> {
-  const properties: Record<string, unknown> = {
-    "クライアント名": { title: richText(data.clientName) },
-    "採血日": { date: { start: data.testDate } },
-    "メモ": { rich_text: richText(data.memo) },
-    "部員": { relation: [{ id: data.playerId }] },
-  };
-  for (const item of ALL_BLOOD_TEST_ITEMS) {
-    const value = data.values[item.key];
-    if (value != null && !Number.isNaN(value)) {
-      properties[item.key] = { number: value };
-    }
-  }
-  const response = (await notion.pages.create({
-    parent: { database_id: BLOOD_TEST_DATABASE_ID },
-    properties: properties as Parameters<typeof notion.pages.create>[0]["properties"],
-  })) as PageObjectResponse;
-  return pageToBloodTest(response);
 }
 
 export async function getBloodTestsByPlayer(playerId: string): Promise<BloodTestRecord[]> {

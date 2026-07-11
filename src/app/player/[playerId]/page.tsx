@@ -3,9 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { BloodTestFormData, BloodTestRecord, KarteFormData, KarteRecord, PersonalKarteRecord, PlayerInfo, RaceResult } from "@/types/karte";
+import { BloodTestRecord, KarteFormData, KarteRecord, PersonalKarteRecord, PlayerInfo, RaceResult } from "@/types/karte";
 import KarteForm from "@/components/KarteForm";
-import BloodTestForm from "@/components/BloodTestForm";
 import MedicalKarteCard from "@/components/MedicalKarteCard";
 import PersonalKarteCard from "@/components/PersonalKarteCard";
 import RaceResultCard from "@/components/RaceResultCard";
@@ -41,7 +40,6 @@ export default function KarteRecordPage() {
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"form" | "history">("form");
-  const [formTab, setFormTab] = useState<"medical" | "blood">("medical");
 
   const karteDates = records.map((r) => r.createdAt.slice(0, 10));
   const personalDates = personalRecords.map((r) => r.createdAt.slice(0, 10));
@@ -156,17 +154,6 @@ export default function KarteRecordPage() {
     setActiveTab("history");
   };
 
-  const handleBloodSubmit = async (data: BloodTestFormData) => {
-    const res = await fetch("/api/blood-test", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error("保存失敗");
-    await fetchRecords();
-    setActiveTab("history");
-  };
-
   const playerName = player?.name ?? "";
 
   const historyContent = loadingHistory ? (
@@ -226,36 +213,8 @@ export default function KarteRecordPage() {
     </div>
   );
 
-  const formTabs = (
-    <div className="flex border-b border-gray-100 mb-4 -mt-1">
-      <button
-        onClick={() => setFormTab("medical")}
-        className={`flex-1 py-2 text-xs font-semibold transition-colors border-b-2 ${
-          formTab === "medical" ? "border-green-600 text-green-600" : "border-transparent text-gray-400"
-        }`}
-      >
-        メディカルカルテ
-      </button>
-      <button
-        onClick={() => setFormTab("blood")}
-        className={`flex-1 py-2 text-xs font-semibold transition-colors border-b-2 ${
-          formTab === "blood" ? "border-red-500 text-red-500" : "border-transparent text-gray-400"
-        }`}
-      >
-        血液検査
-      </button>
-    </div>
-  );
-
   const formContent = !loadingPlayer && player && (
-    <>
-      {formTabs}
-      {formTab === "medical" ? (
-        <KarteForm playerId={playerId} playerName={playerName} onSubmit={handleSubmit} />
-      ) : (
-        <BloodTestForm playerId={playerId} playerName={playerName} playerGender={player.gender} onSubmit={handleBloodSubmit} />
-      )}
-    </>
+    <KarteForm playerId={playerId} playerName={playerName} onSubmit={handleSubmit} />
   );
 
   return (
@@ -321,7 +280,7 @@ export default function KarteRecordPage() {
       <main className="hidden md:flex flex-1 overflow-hidden min-h-0">
         <section className="w-1/2 flex flex-col border-r border-gray-200 bg-white">
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-            <h2 className="text-sm font-bold text-gray-700">新規記入</h2>
+            <h2 className="text-sm font-bold text-gray-700">新規カルテ記入</h2>
             <p className="text-xs text-gray-400 mt-0.5">
               {new Date().toLocaleDateString("ja-JP", {
                 year: "numeric", month: "long", day: "numeric", weekday: "long",
