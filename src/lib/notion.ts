@@ -1,5 +1,5 @@
 import { Client } from "@notionhq/client";
-import { KarteRecord, KarteFormData, PlayerInfo, RaceResult, PersonalKarteRecord, BloodTestRecord } from "@/types/karte";
+import { KarteRecord, KarteFormData, PlayerInfo, RaceResult, PersonalKarteRecord, BloodTestRecord, PlayerProfile, PlayerProfileFormData, InBodyRecord, InBodyFormData } from "@/types/karte";
 import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 import { ALL_BLOOD_TEST_ITEMS } from "@/lib/bloodTestItems";
 
@@ -9,6 +9,8 @@ const MEMBERS_DATABASE_ID = process.env.NOTION_MEMBERS_DATABASE_ID!;
 const RACE_RESULTS_DATABASE_ID = process.env.NOTION_RACE_RESULTS_DATABASE_ID!;
 const PERSONAL_KARTE_DATABASE_ID = process.env.NOTION_PERSONAL_KARTE_DATABASE_ID!;
 const BLOOD_TEST_DATABASE_ID = process.env.NOTION_BLOOD_TEST_DATABASE_ID!;
+const PLAYER_PROFILE_DATABASE_ID = process.env.NOTION_PLAYER_PROFILE_DATABASE_ID!;
+const INBODY_DATABASE_ID = process.env.NOTION_INBODY_DATABASE_ID!;
 
 function richText(value: string) {
   return [{ text: { content: value } }];
@@ -241,5 +243,106 @@ export async function getBloodTestsByPlayer(playerId: string): Promise<BloodTest
 export async function getBloodTestDatesByPlayer(playerId: string): Promise<string[]> {
   const records = await getBloodTestsByPlayer(playerId);
   const dates = new Set(records.map((r) => r.testDate));
+  return Array.from(dates).sort();
+}
+
+function pageToProfile(page: PageObjectResponse): PlayerProfile {
+  const p = page.properties;
+  return {
+    id: page.id,
+    playerId: extractRelationId(p["部員"]),
+    clientName: extractText(p["クライアント名"]),
+    trainerName: extractText(p["担当トレーナー名"]),
+    existingConditions: extractText(p["既往歴"]),
+    medications: extractText(p["服用している薬"]),
+    updatedAt: page.last_edited_time,
+  };
+}
+
+export async function getPlayerProfileByPlayer(playerId: string): Promise<PlayerProfile | null> {
+  const response = await notion.databases.query({
+    database_id: PLAYER_PROFILE_DATABASE_ID,
+    filter: {
+      property: "部員",
+      relation: { contains: playerId },
+    },
+    page_size: 1,
+  });
+  const page = (response.results as PageObjectResponse[])[0];
+  return page ? pageToProfile(page) : null;
+}
+
+export async function upsertPlayerProfile(data: PlayerProfileFormData): Promise<PlayerProfile> {
+  const existing = await getPlayerProfileByPlayer(data.playerId);
+  const properties = {
+    "クライアント名": { title: richText(data.clientName) },
+    "担当トレーナー名": { select: { name: data.trainerName } },
+    "既往歴": { rich_text: richText(data.existingConditions) },
+    "服用している薬": { rich_text: richText(data.medications) },
+    "部員": { relation: [{ id: data.playerId }] },
+  };
+  const response = existing
+    ? ((await notion.pages.update({ page_id: existing.id, properties })) as PageObjectResponse)
+    : ((await notion.pages.create({ parent: { database_id: PLAYER_PROFILE_DATABASE_ID }, properties })) as PageObjectResponse);
+  return pageToProfile(response);
+}
+
+function pageToInBody(page: PageObjectResponse): InBodyRecord {
+  const p = page.properties;
+  const measuredDate = extractDate(p["測定日"]) || page.created_time.slice(0, 10);
+  return {
+    id: page.id,
+    playerId: extractRelationId(p["部員"]),
+    clientName: extractText(p["クライアント名"]),
+    measuredDate,
+    trainerName: extractText(p["担当トレーナー名"]),
+    weight: extractNumber(p["体重"]),
+    skeletalMuscleMass: extractNumber(p["骨格筋量"]),
+    bodyFatMass: extractNumber(p["体脂肪量"]),
+    bodyFatPercentage: extractNumber(p["体脂肪率"]),
+    bmi: extractNumber(p["BMI"]),
+    visceralFatLevel: extractNumber(p["内臓脂肪レベル"]),
+    memo: extractText(p["メモ"]),
+    createdAt: page.created_time,
+  };
+}
+
+export async function createInBodyRecord(data: InBodyFormData): Promise<InBodyRecord> {
+  const numberProp = (value: number | undefined) => ({ number: value ?? null });
+  const response = (await notion.pages.create({
+    parent: { database_id: INBODY_DATABASE_ID },
+    properties: {
+      "クライアント名": { title: richText(data.clientName) },
+      "測定日": { date: { start: data.measuredDate } },
+      "担当トレーナー名": { select: { name: data.trainerName } },
+      "体重": numberProp(data.weight),
+      "骨格筋量": numberProp(data.skeletalMuscleMass),
+      "体脂肪量": numberProp(data.bodyFatMass),
+      "体脂肪率": numberProp(data.bodyFatPercentage),
+      "BMI": numberProp(data.bmi),
+      "内臓脂肪レベル": numberProp(data.visceralFatLevel),
+      "メモ": { rich_text: richText(data.memo) },
+      "部員": { relation: [{ id: data.playerId }] },
+    },
+  })) as PageObjectResponse;
+  return pageToInBody(response);
+}
+
+export async function getInBodyRecordsByPlayer(playerId: string): Promise<InBodyRecord[]> {
+  const response = await notion.databases.query({
+    database_id: INBODY_DATABASE_ID,
+    filter: {
+      property: "部員",
+      relation: { contains: playerId },
+    },
+    sorts: [{ property: "測定日", direction: "descending" }],
+    page_size: 100,
+  });
+  return (response.results as PageObjectResponse[]).map(pageToInBody);
+}
+
+export async function getInBodyDatesByPlayer(playerId: string): Promise<string[]> {
+  const records = await getInBodyRecordsByPlayer(playerId);
+  const dates = new Set(records.map((r) => r.measuredDate));
   return Array.from(dates).sort();
 }

@@ -7,11 +7,13 @@ interface MiniCalendarProps {
   raceDates?: string[];
   personalDates?: string[];
   bloodDates?: string[];
+  inbodyDates?: string[];
   selectedDate: string | null;
   onSelectDate: (date: string | null) => void;
   onJumpToRace?: (date: string) => void;
   onJumpToPersonal?: (date: string) => void;
   onJumpToBlood?: (date: string) => void;
+  onJumpToInBody?: (date: string) => void;
 }
 
 const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
@@ -25,11 +27,13 @@ export default function MiniCalendar({
   raceDates = [],
   personalDates = [],
   bloodDates = [],
+  inbodyDates = [],
   selectedDate,
   onSelectDate,
   onJumpToRace,
   onJumpToPersonal,
   onJumpToBlood,
+  onJumpToInBody,
 }: MiniCalendarProps) {
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -40,6 +44,7 @@ export default function MiniCalendar({
   const raceSet = new Set(raceDates);
   const personalSet = new Set(personalDates);
   const bloodSet = new Set(bloodDates);
+  const inbodySet = new Set(inbodyDates);
 
   const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -89,6 +94,9 @@ export default function MiniCalendar({
         <span className="flex items-center gap-1 text-[9px] text-gray-400">
           <span className="w-1.5 h-1.5 rounded-full bg-red-500" />血液検査
         </span>
+        <span className="flex items-center gap-1 text-[9px] text-gray-400">
+          <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />InBody
+        </span>
       </div>
 
       <div className="grid grid-cols-7 mb-1">
@@ -110,7 +118,8 @@ export default function MiniCalendar({
           const hasRace = raceSet.has(dateStr);
           const hasPersonal = personalSet.has(dateStr);
           const hasBlood = bloodSet.has(dateStr);
-          const hasActivity = hasKarte || hasRace || hasPersonal || hasBlood;
+          const hasInBody = inbodySet.has(dateStr);
+          const hasActivity = hasKarte || hasRace || hasPersonal || hasBlood || hasInBody;
           const isSelected = selectedDate === dateStr && hasActivity;
           const isToday = dateStr === todayStr;
           const col = i % 7;
@@ -122,6 +131,10 @@ export default function MiniCalendar({
             }
             if (hasBlood) {
               onJumpToBlood?.(dateStr);
+              return;
+            }
+            if (hasInBody) {
+              onJumpToInBody?.(dateStr);
               return;
             }
             if (hasPersonal) {
@@ -177,6 +190,11 @@ export default function MiniCalendar({
                 {hasBlood && (
                   <span className={`text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate ${isSelected ? "bg-white/20 text-white" : "bg-red-100 text-red-600"}`}>
                     血液検査
+                  </span>
+                )}
+                {hasInBody && (
+                  <span className={`text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate ${isSelected ? "bg-white/20 text-white" : "bg-purple-100 text-purple-600"}`}>
+                    InBody
                   </span>
                 )}
               </div>

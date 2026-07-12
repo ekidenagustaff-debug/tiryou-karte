@@ -3,12 +3,15 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { BloodTestRecord, KarteFormData, KarteRecord, PersonalKarteRecord, PlayerInfo, RaceResult } from "@/types/karte";
+import { BloodTestRecord, InBodyFormData, InBodyRecord, KarteFormData, KarteRecord, PersonalKarteRecord, PlayerInfo, RaceResult } from "@/types/karte";
 import KarteForm from "@/components/KarteForm";
+import InBodyForm from "@/components/InBodyForm";
+import PlayerProfileForm from "@/components/PlayerProfileForm";
 import MedicalKarteCard from "@/components/MedicalKarteCard";
 import PersonalKarteCard from "@/components/PersonalKarteCard";
 import RaceResultCard from "@/components/RaceResultCard";
 import BloodTestCard from "@/components/BloodTestCard";
+import InBodyCard from "@/components/InBodyCard";
 import MiniCalendar from "@/components/MiniCalendar";
 
 function Spinner() {
@@ -24,7 +27,10 @@ type HistoryItem =
   | { type: "medical"; sortKey: string; data: KarteRecord }
   | { type: "personal"; sortKey: string; data: PersonalKarteRecord }
   | { type: "race"; sortKey: string; data: RaceResult }
-  | { type: "blood"; sortKey: string; data: BloodTestRecord };
+  | { type: "blood"; sortKey: string; data: BloodTestRecord }
+  | { type: "inbody"; sortKey: string; data: InBodyRecord };
+
+type FormTab = "medical" | "inbody" | "profile";
 
 export default function KarteRecordPage() {
   const params = useParams();
@@ -35,16 +41,19 @@ export default function KarteRecordPage() {
   const [personalRecords, setPersonalRecords] = useState<PersonalKarteRecord[]>([]);
   const [raceResults, setRaceResults] = useState<RaceResult[]>([]);
   const [bloodRecords, setBloodRecords] = useState<BloodTestRecord[]>([]);
+  const [inbodyRecords, setInbodyRecords] = useState<InBodyRecord[]>([]);
   const [loadingPlayer, setLoadingPlayer] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"form" | "history">("form");
+  const [formTab, setFormTab] = useState<FormTab>("medical");
 
   const karteDates = records.map((r) => r.createdAt.slice(0, 10));
   const personalDates = personalRecords.map((r) => r.createdAt.slice(0, 10));
   const raceDates = raceResults.map((r) => r.date).filter(Boolean);
   const bloodDates = bloodRecords.map((r) => r.testDate).filter(Boolean);
+  const inbodyDates = inbodyRecords.map((r) => r.measuredDate).filter(Boolean);
 
   const karteIndexMap = new Map(
     records
@@ -58,12 +67,14 @@ export default function KarteRecordPage() {
     ...personalRecords.map((r) => ({ type: "personal" as const, sortKey: r.createdAt, data: r })),
     ...raceResults.map((r) => ({ type: "race" as const, sortKey: r.date, data: r })),
     ...bloodRecords.map((r) => ({ type: "blood" as const, sortKey: r.testDate, data: r })),
+    ...inbodyRecords.map((r) => ({ type: "inbody" as const, sortKey: r.measuredDate, data: r })),
   ].sort((a, b) => b.sortKey.localeCompare(a.sortKey));
 
   const filteredItems = selectedDate
     ? allItems.filter((item) => {
         if (item.type === "race") return item.data.date === selectedDate;
         if (item.type === "blood") return item.data.testDate === selectedDate;
+        if (item.type === "inbody") return item.data.measuredDate === selectedDate;
         return item.data.createdAt.startsWith(selectedDate);
       })
     : allItems;
@@ -89,13 +100,15 @@ export default function KarteRecordPage() {
     setLoadingHistory(true);
     setHistoryError(null);
     try {
-      const [karteRes, bloodRes] = await Promise.all([
+      const [karteRes, bloodRes, inbodyRes] = await Promise.all([
         fetch(`/api/karte?playerId=${encodeURIComponent(playerId)}`),
         fetch(`/api/blood-test?playerId=${encodeURIComponent(playerId)}`),
+        fetch(`/api/inbody?playerId=${encodeURIComponent(playerId)}`),
       ]);
-      if (!karteRes.ok || !bloodRes.ok) throw new Error("取得失敗");
+      if (!karteRes.ok || !bloodRes.ok || !inbodyRes.ok) throw new Error("取得失敗");
       setRecords(await karteRes.json());
       setBloodRecords(await bloodRes.json());
+      setInbodyRecords(await inbodyRes.json());
     } catch {
       setHistoryError("記録の読み込みに失敗しました");
     } finally {
@@ -143,8 +156,28 @@ export default function KarteRecordPage() {
     [bloodRecords, jumpToCard]
   );
 
+  const jumpToInBody = useCallback(
+    (dateStr: string) => {
+      const target = inbodyRecords.find((r) => r.measuredDate === dateStr);
+      if (!target) return;
+      jumpToCard(`inbody-${target.id}`);
+    },
+    [inbodyRecords, jumpToCard]
+  );
+
   const handleSubmit = async (data: KarteFormData) => {
     const res = await fetch("/api/karte", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("保存失敗");
+    await fetchRecords();
+    setActiveTab("history");
+  };
+
+  const handleInBodySubmit = async (data: InBodyFormData) => {
+    const res = await fetch("/api/inbody", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -189,6 +222,9 @@ export default function KarteRecordPage() {
         if (item.type === "blood") {
           return <BloodTestCard key={item.data.id} record={item.data} playerGender={player?.gender} />;
         }
+        if (item.type === "inbody") {
+          return <InBodyCard key={item.data.id} record={item.data} />;
+        }
         return <RaceResultCard key={item.data.id} result={item.data} />;
       })}
     </div>
@@ -202,19 +238,61 @@ export default function KarteRecordPage() {
           personalDates={personalDates}
           raceDates={raceDates}
           bloodDates={bloodDates}
+          inbodyDates={inbodyDates}
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
           onJumpToRace={jumpToRace}
           onJumpToPersonal={jumpToPersonal}
           onJumpToBlood={jumpToBlood}
+          onJumpToInBody={jumpToInBody}
         />
       )}
       {historyContent}
     </div>
   );
 
+  const formTabs = (
+    <div className="flex border-b border-gray-100 mb-4 -mt-1">
+      <button
+        onClick={() => setFormTab("medical")}
+        className={`flex-1 py-2 text-xs font-semibold transition-colors border-b-2 ${
+          formTab === "medical" ? "border-green-600 text-green-600" : "border-transparent text-gray-400"
+        }`}
+      >
+        メディカルカルテ
+      </button>
+      <button
+        onClick={() => setFormTab("inbody")}
+        className={`flex-1 py-2 text-xs font-semibold transition-colors border-b-2 ${
+          formTab === "inbody" ? "border-purple-500 text-purple-500" : "border-transparent text-gray-400"
+        }`}
+      >
+        InBody
+      </button>
+      <button
+        onClick={() => setFormTab("profile")}
+        className={`flex-1 py-2 text-xs font-semibold transition-colors border-b-2 ${
+          formTab === "profile" ? "border-gray-700 text-gray-700" : "border-transparent text-gray-400"
+        }`}
+      >
+        プロフィール
+      </button>
+    </div>
+  );
+
   const formContent = !loadingPlayer && player && (
-    <KarteForm playerId={playerId} playerName={playerName} onSubmit={handleSubmit} />
+    <>
+      {formTabs}
+      {formTab === "medical" && (
+        <KarteForm playerId={playerId} playerName={playerName} onSubmit={handleSubmit} />
+      )}
+      {formTab === "inbody" && (
+        <InBodyForm playerId={playerId} playerName={playerName} onSubmit={handleInBodySubmit} />
+      )}
+      {formTab === "profile" && (
+        <PlayerProfileForm playerId={playerId} playerName={playerName} />
+      )}
+    </>
   );
 
   return (
@@ -246,7 +324,7 @@ export default function KarteRecordPage() {
               : "border-transparent text-gray-400"
           }`}
         >
-          新規カルテ
+          新規記入
         </button>
         <button
           onClick={() => setActiveTab("history")}
@@ -280,7 +358,7 @@ export default function KarteRecordPage() {
       <main className="hidden md:flex flex-1 overflow-hidden min-h-0">
         <section className="w-1/2 flex flex-col border-r border-gray-200 bg-white">
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-            <h2 className="text-sm font-bold text-gray-700">新規カルテ記入</h2>
+            <h2 className="text-sm font-bold text-gray-700">新規記入</h2>
             <p className="text-xs text-gray-400 mt-0.5">
               {new Date().toLocaleDateString("ja-JP", {
                 year: "numeric", month: "long", day: "numeric", weekday: "long",
@@ -310,6 +388,11 @@ export default function KarteRecordPage() {
                 {bloodRecords.length > 0 && (
                   <span className="bg-red-100 text-red-600 text-xs font-semibold px-2 py-0.5 rounded-full">
                     血液検査 {bloodRecords.length}件
+                  </span>
+                )}
+                {inbodyRecords.length > 0 && (
+                  <span className="bg-purple-100 text-purple-600 text-xs font-semibold px-2 py-0.5 rounded-full">
+                    InBody {inbodyRecords.length}件
                   </span>
                 )}
                 {records.length > 0 && (
