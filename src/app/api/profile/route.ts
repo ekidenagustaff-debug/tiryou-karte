@@ -21,11 +21,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { playerId, clientName, trainerName, existingConditions, medications } = body;
+    const { playerId, clientName, existingConditions, medications } = body;
 
-    if (!playerId?.trim() || !clientName?.trim() || !trainerName?.trim()) {
+    if (!playerId?.trim() || !clientName?.trim()) {
       return NextResponse.json(
-        { error: "選手ID・選手名・担当トレーナー名は必須です" },
+        { error: "選手ID・選手名は必須です" },
         { status: 400 }
       );
     }
@@ -33,7 +33,6 @@ export async function POST(req: NextRequest) {
     const profile = await upsertPlayerProfile({
       playerId,
       clientName,
-      trainerName,
       existingConditions: existingConditions ?? "",
       medications: medications ?? "",
     });

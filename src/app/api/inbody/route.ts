@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
       playerId,
       clientName,
       measuredDate,
-      trainerName,
       weight,
       skeletalMuscleMass,
       bodyFatMass,
@@ -35,9 +34,9 @@ export async function POST(req: NextRequest) {
       memo,
     } = body;
 
-    if (!playerId?.trim() || !clientName?.trim() || !trainerName?.trim() || !measuredDate?.trim()) {
+    if (!playerId?.trim() || !clientName?.trim() || !measuredDate?.trim()) {
       return NextResponse.json(
-        { error: "選手ID・選手名・担当トレーナー名・測定日は必須です" },
+        { error: "選手ID・選手名・測定日は必須です" },
         { status: 400 }
       );
     }
@@ -46,7 +45,6 @@ export async function POST(req: NextRequest) {
       playerId,
       clientName,
       measuredDate,
-      trainerName,
       weight: typeof weight === "number" ? weight : undefined,
       skeletalMuscleMass: typeof skeletalMuscleMass === "number" ? skeletalMuscleMass : undefined,
       bodyFatMass: typeof bodyFatMass === "number" ? bodyFatMass : undefined,

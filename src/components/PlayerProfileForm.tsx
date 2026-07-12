@@ -8,8 +8,6 @@ interface PlayerProfileFormProps {
   playerName: string;
 }
 
-const TRAINER_OPTIONS = ["吉見", "桑原", "吉田"];
-
 function Spinner() {
   return (
     <svg className="animate-spin w-5 h-5 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -22,7 +20,6 @@ function Spinner() {
 export default function PlayerProfileForm({ playerId, playerName }: PlayerProfileFormProps) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [trainerName, setTrainerName] = useState("");
   const [existingConditions, setExistingConditions] = useState("");
   const [medications, setMedications] = useState("");
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
@@ -40,7 +37,6 @@ export default function PlayerProfileForm({ playerId, playerName }: PlayerProfil
       })
       .then((profile: PlayerProfile | null) => {
         if (profile) {
-          setTrainerName(profile.trainerName);
           setExistingConditions(profile.existingConditions);
           setMedications(profile.medications);
           setUpdatedAt(profile.updatedAt);
@@ -58,7 +54,6 @@ export default function PlayerProfileForm({ playerId, playerName }: PlayerProfil
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!trainerName.trim()) return;
     setSaving(true);
     setError(null);
     try {
@@ -68,7 +63,6 @@ export default function PlayerProfileForm({ playerId, playerName }: PlayerProfil
         body: JSON.stringify({
           playerId,
           clientName: playerName,
-          trainerName,
           existingConditions,
           medications,
         }),
@@ -110,23 +104,6 @@ export default function PlayerProfileForm({ playerId, playerName }: PlayerProfil
           最終更新: {new Date(updatedAt).toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" })}
         </p>
       )}
-
-      <div className="flex flex-col gap-1">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          担当トレーナー名 <span className="text-red-400">*</span>
-        </label>
-        <select
-          value={trainerName}
-          onChange={(e) => { setTrainerName(e.target.value); if (error) setError(null); }}
-          required
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent bg-white text-gray-800"
-        >
-          <option value="">トレーナーを選択...</option>
-          {TRAINER_OPTIONS.map((name) => (
-            <option key={name} value={name}>{name}</option>
-          ))}
-        </select>
-      </div>
 
       <div className="flex flex-col gap-1">
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">既往歴</label>

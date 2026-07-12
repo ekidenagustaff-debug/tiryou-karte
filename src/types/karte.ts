@@ -71,7 +71,6 @@ export interface PlayerProfile {
   id: string;
   playerId?: string;
   clientName: string;
-  trainerName: string;
   existingConditions: string; // 既往歴
   medications: string; // 服用している薬
   updatedAt: string;
@@ -80,7 +79,6 @@ export interface PlayerProfile {
 export interface PlayerProfileFormData {
   playerId: string;
   clientName: string;
-  trainerName: string;
   existingConditions: string;
   medications: string;
 }
@@ -90,7 +88,6 @@ export interface InBodyRecord {
   playerId?: string;
   clientName: string;
   measuredDate: string; // "YYYY-MM-DD"
-  trainerName: string;
   weight?: number;
   skeletalMuscleMass?: number;
   bodyFatMass?: number;
@@ -105,7 +102,6 @@ export interface InBodyFormData {
   playerId: string;
   clientName: string;
   measuredDate: string;
-  trainerName: string;
   weight?: number;
   skeletalMuscleMass?: number;
   bodyFatMass?: number;

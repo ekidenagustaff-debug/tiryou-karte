@@ -24,12 +24,9 @@ export default function InBodyCard({ record }: InBodyCardProps) {
 
   return (
     <div data-anchor-id={`inbody-${record.id}`} className="bg-purple-50 border border-purple-100 rounded-xl p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="bg-purple-100 text-purple-600 text-xs font-bold px-2 py-0.5 rounded-full">InBody</span>
-          <span className="text-xs text-gray-400">{formatDate(record.measuredDate)}</span>
-        </div>
-        <span className="text-xs text-gray-500">{record.trainerName}</span>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="bg-purple-100 text-purple-600 text-xs font-bold px-2 py-0.5 rounded-full">InBody</span>
+        <span className="text-xs text-gray-400">{formatDate(record.measuredDate)}</span>
       </div>
 
       {entries.length === 0 ? (

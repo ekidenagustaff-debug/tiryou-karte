@@ -9,15 +9,12 @@ interface InBodyFormProps {
   onSubmit: (data: InBodyFormData) => Promise<void>;
 }
 
-const TRAINER_OPTIONS = ["吉見", "桑原", "吉田"];
-
 function todayStr(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 const EMPTY = {
-  trainerName: "",
   weight: "",
   skeletalMuscleMass: "",
   bodyFatMass: "",
@@ -49,7 +46,7 @@ export default function InBodyForm({ playerId, playerName, onSubmit }: InBodyFor
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.trainerName.trim() || !measuredDate) return;
+    if (!measuredDate) return;
     setSaving(true);
     setError(null);
     try {
@@ -57,7 +54,6 @@ export default function InBodyForm({ playerId, playerName, onSubmit }: InBodyFor
         playerId,
         clientName: playerName,
         measuredDate,
-        trainerName: form.trainerName,
         weight: toNumber(form.weight),
         skeletalMuscleMass: toNumber(form.skeletalMuscleMass),
         bodyFatMass: toNumber(form.bodyFatMass),
@@ -90,24 +86,6 @@ export default function InBodyForm({ playerId, playerName, onSubmit }: InBodyFor
           required
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent bg-white text-gray-800"
         />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          担当トレーナー名 <span className="text-red-400">*</span>
-        </label>
-        <select
-          name="trainerName"
-          value={form.trainerName}
-          onChange={handleChange}
-          required
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent bg-white text-gray-800"
-        >
-          <option value="">トレーナーを選択...</option>
-          {TRAINER_OPTIONS.map((name) => (
-            <option key={name} value={name}>{name}</option>
-          ))}
-        </select>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

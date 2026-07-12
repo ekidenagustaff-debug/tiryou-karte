@@ -250,9 +250,8 @@ function pageToProfile(page: PageObjectResponse): PlayerProfile {
   const p = page.properties;
   return {
     id: page.id,
-    playerId: extractRelationId(p["部員"]),
+    playerId: extractRelationId(p["部員DB"]),
     clientName: extractText(p["クライアント名"]),
-    trainerName: extractText(p["担当トレーナー名"]),
     existingConditions: extractText(p["既往歴"]),
     medications: extractText(p["服用している薬"]),
     updatedAt: page.last_edited_time,
@@ -263,7 +262,7 @@ export async function getPlayerProfileByPlayer(playerId: string): Promise<Player
   const response = await notion.databases.query({
     database_id: PLAYER_PROFILE_DATABASE_ID,
     filter: {
-      property: "部員",
+      property: "部員DB",
       relation: { contains: playerId },
     },
     page_size: 1,
@@ -276,10 +275,9 @@ export async function upsertPlayerProfile(data: PlayerProfileFormData): Promise<
   const existing = await getPlayerProfileByPlayer(data.playerId);
   const properties = {
     "クライアント名": { title: richText(data.clientName) },
-    "担当トレーナー名": { select: { name: data.trainerName } },
     "既往歴": { rich_text: richText(data.existingConditions) },
     "服用している薬": { rich_text: richText(data.medications) },
-    "部員": { relation: [{ id: data.playerId }] },
+    "部員DB": { relation: [{ id: data.playerId }] },
   };
   const response = existing
     ? ((await notion.pages.update({ page_id: existing.id, properties })) as PageObjectResponse)
@@ -295,7 +293,6 @@ function pageToInBody(page: PageObjectResponse): InBodyRecord {
     playerId: extractRelationId(p["部員"]),
     clientName: extractText(p["クライアント名"]),
     measuredDate,
-    trainerName: extractText(p["担当トレーナー名"]),
     weight: extractNumber(p["体重"]),
     skeletalMuscleMass: extractNumber(p["骨格筋量"]),
     bodyFatMass: extractNumber(p["体脂肪量"]),
@@ -314,7 +311,6 @@ export async function createInBodyRecord(data: InBodyFormData): Promise<InBodyRe
     properties: {
       "クライアント名": { title: richText(data.clientName) },
       "測定日": { date: { start: data.measuredDate } },
-      "担当トレーナー名": { select: { name: data.trainerName } },
       "体重": numberProp(data.weight),
       "骨格筋量": numberProp(data.skeletalMuscleMass),
       "体脂肪量": numberProp(data.bodyFatMass),
