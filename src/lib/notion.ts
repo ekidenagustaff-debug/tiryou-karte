@@ -1,5 +1,5 @@
 import { Client } from "@notionhq/client";
-import { KarteRecord, KarteFormData, PlayerInfo, RaceResult, PersonalKarteRecord, BloodTestRecord, PlayerProfile, PlayerProfileFormData, InBodyRecord, InBodyFormData } from "@/types/karte";
+import { KarteRecord, KarteFormData, PlayerInfo, RaceResult, PersonalKarteRecord, BloodTestRecord, PlayerProfile, PlayerProfileFormData, InBodyRecord } from "@/types/karte";
 import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 import { ALL_BLOOD_TEST_ITEMS } from "@/lib/bloodTestItems";
 
@@ -302,26 +302,6 @@ function pageToInBody(page: PageObjectResponse): InBodyRecord {
     memo: extractText(p["メモ"]),
     createdAt: page.created_time,
   };
-}
-
-export async function createInBodyRecord(data: InBodyFormData): Promise<InBodyRecord> {
-  const numberProp = (value: number | undefined) => ({ number: value ?? null });
-  const response = (await notion.pages.create({
-    parent: { database_id: INBODY_DATABASE_ID },
-    properties: {
-      "クライアント名": { title: richText(data.clientName) },
-      "測定日": { date: { start: data.measuredDate } },
-      "体重": numberProp(data.weight),
-      "骨格筋量": numberProp(data.skeletalMuscleMass),
-      "体脂肪量": numberProp(data.bodyFatMass),
-      "体脂肪率": numberProp(data.bodyFatPercentage),
-      "BMI": numberProp(data.bmi),
-      "内臓脂肪レベル": numberProp(data.visceralFatLevel),
-      "メモ": { rich_text: richText(data.memo) },
-      "部員": { relation: [{ id: data.playerId }] },
-    },
-  })) as PageObjectResponse;
-  return pageToInBody(response);
 }
 
 export async function getInBodyRecordsByPlayer(playerId: string): Promise<InBodyRecord[]> {

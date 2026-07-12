@@ -3,9 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { BloodTestRecord, InBodyFormData, InBodyRecord, KarteFormData, KarteRecord, PersonalKarteRecord, PlayerInfo, RaceResult } from "@/types/karte";
+import { BloodTestRecord, InBodyRecord, KarteFormData, KarteRecord, PersonalKarteRecord, PlayerInfo, RaceResult } from "@/types/karte";
 import KarteForm from "@/components/KarteForm";
-import InBodyForm from "@/components/InBodyForm";
 import PlayerProfileForm from "@/components/PlayerProfileForm";
 import MedicalKarteCard from "@/components/MedicalKarteCard";
 import PersonalKarteCard from "@/components/PersonalKarteCard";
@@ -30,7 +29,7 @@ type HistoryItem =
   | { type: "blood"; sortKey: string; data: BloodTestRecord }
   | { type: "inbody"; sortKey: string; data: InBodyRecord };
 
-type FormTab = "medical" | "inbody" | "profile";
+type FormTab = "medical" | "profile";
 
 export default function KarteRecordPage() {
   const params = useParams();
@@ -176,17 +175,6 @@ export default function KarteRecordPage() {
     setActiveTab("history");
   };
 
-  const handleInBodySubmit = async (data: InBodyFormData) => {
-    const res = await fetch("/api/inbody", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error("保存失敗");
-    await fetchRecords();
-    setActiveTab("history");
-  };
-
   const playerName = player?.name ?? "";
 
   const historyContent = loadingHistory ? (
@@ -262,14 +250,6 @@ export default function KarteRecordPage() {
         メディカルカルテ
       </button>
       <button
-        onClick={() => setFormTab("inbody")}
-        className={`flex-1 py-2 text-xs font-semibold transition-colors border-b-2 ${
-          formTab === "inbody" ? "border-purple-500 text-purple-500" : "border-transparent text-gray-400"
-        }`}
-      >
-        InBody
-      </button>
-      <button
         onClick={() => setFormTab("profile")}
         className={`flex-1 py-2 text-xs font-semibold transition-colors border-b-2 ${
           formTab === "profile" ? "border-gray-700 text-gray-700" : "border-transparent text-gray-400"
@@ -285,9 +265,6 @@ export default function KarteRecordPage() {
       {formTabs}
       {formTab === "medical" && (
         <KarteForm playerId={playerId} playerName={playerName} onSubmit={handleSubmit} />
-      )}
-      {formTab === "inbody" && (
-        <InBodyForm playerId={playerId} playerName={playerName} onSubmit={handleInBodySubmit} />
       )}
       {formTab === "profile" && (
         <PlayerProfileForm playerId={playerId} playerName={playerName} />

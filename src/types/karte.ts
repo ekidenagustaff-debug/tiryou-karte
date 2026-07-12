@@ -97,16 +97,3 @@ export interface InBodyRecord {
   memo: string;
   createdAt: string;
 }
-
-export interface InBodyFormData {
-  playerId: string;
-  clientName: string;
-  measuredDate: string;
-  weight?: number;
-  skeletalMuscleMass?: number;
-  bodyFatMass?: number;
-  bodyFatPercentage?: number;
-  bmi?: number;
-  visceralFatLevel?: number;
-  memo: string;
-}
