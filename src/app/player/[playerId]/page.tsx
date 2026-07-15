@@ -6,6 +6,7 @@ import Link from "next/link";
 import { BloodTestRecord, InBodyRecord, KarteFormData, KarteRecord, PersonalKarteRecord, PlayerInfo, RaceResult } from "@/types/karte";
 import KarteForm from "@/components/KarteForm";
 import PlayerProfileForm from "@/components/PlayerProfileForm";
+import BloodTestTrendTable from "@/components/BloodTestTrendTable";
 import MedicalKarteCard from "@/components/MedicalKarteCard";
 import PersonalKarteCard from "@/components/PersonalKarteCard";
 import RaceResultCard from "@/components/RaceResultCard";
@@ -267,7 +268,10 @@ export default function KarteRecordPage() {
         <KarteForm playerId={playerId} playerName={playerName} onSubmit={handleSubmit} />
       )}
       {formTab === "profile" && (
-        <PlayerProfileForm playerId={playerId} playerName={playerName} />
+        <>
+          <PlayerProfileForm playerId={playerId} playerName={playerName} />
+          <BloodTestTrendTable records={bloodRecords} playerGender={player?.gender} />
+        </>
       )}
     </>
   );
