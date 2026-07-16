@@ -159,7 +159,7 @@ export default function PlayerListPage() {
       <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center gap-3 shadow-sm">
         <div className="bg-green-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold">S</div>
         <div>
-          <h1 className="text-base font-bold text-gray-800 leading-tight">SPM メディカルカルテ</h1>
+          <h1 className="text-base font-bold text-gray-800 leading-tight">メディカルカルテシステム</h1>
           <p className="text-xs text-gray-400">青山学院陸上部</p>
         </div>
       </header>

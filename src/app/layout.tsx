@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SPM メディカルカルテ",
+  title: "メディカルカルテシステム",
   description: "青山学院陸上部 メディカルトレーナーカルテ管理システム",
 };
 
