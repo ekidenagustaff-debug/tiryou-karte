@@ -45,7 +45,6 @@ export default function KarteRecordPage() {
   const [loadingPlayer, setLoadingPlayer] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"form" | "history">("form");
   const [formTab, setFormTab] = useState<FormTab>("medical");
 
@@ -69,15 +68,6 @@ export default function KarteRecordPage() {
     ...bloodRecords.map((r) => ({ type: "blood" as const, sortKey: r.testDate, data: r })),
     ...inbodyRecords.map((r) => ({ type: "inbody" as const, sortKey: r.measuredDate, data: r })),
   ].sort((a, b) => b.sortKey.localeCompare(a.sortKey));
-
-  const filteredItems = selectedDate
-    ? allItems.filter((item) => {
-        if (item.type === "race") return item.data.date === selectedDate;
-        if (item.type === "blood") return item.data.testDate === selectedDate;
-        if (item.type === "inbody") return item.data.measuredDate === selectedDate;
-        return item.data.createdAt.startsWith(selectedDate);
-      })
-    : allItems;
 
   useEffect(() => {
     fetch(`/api/players/${playerId}`)
@@ -128,6 +118,16 @@ export default function KarteRecordPage() {
       (visible ?? candidates[0])?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }, []);
+
+  const jumpToMedical = useCallback(
+    (dateStr: string) => {
+      const matches = records.filter((r) => r.createdAt.startsWith(dateStr));
+      if (matches.length === 0) return;
+      const oldest = matches.reduce((a, b) => (a.createdAt < b.createdAt ? a : b));
+      jumpToCard(`medical-${oldest.id}`);
+    },
+    [records, jumpToCard]
+  );
 
   const jumpToRace = useCallback(
     (dateStr: string) => {
@@ -195,13 +195,9 @@ export default function KarteRecordPage() {
       </svg>
       <p className="text-sm">まだ記録はありません</p>
     </div>
-  ) : filteredItems.length === 0 ? (
-    <p className="text-sm text-gray-400 text-center py-6">
-      {selectedDate?.replace(/-/g, "/")} の記録はありません
-    </p>
   ) : (
     <div className="flex flex-col gap-3">
-      {filteredItems.map((item) => {
+      {allItems.map((item) => {
         if (item.type === "medical") {
           return <MedicalKarteCard key={item.data.id} record={item.data} index={karteIndexMap.get(item.data.id) ?? 0} />;
         }
@@ -228,8 +224,7 @@ export default function KarteRecordPage() {
           raceDates={raceDates}
           bloodDates={bloodDates}
           inbodyDates={inbodyDates}
-          selectedDate={selectedDate}
-          onSelectDate={setSelectedDate}
+          onJumpToMedical={jumpToMedical}
           onJumpToRace={jumpToRace}
           onJumpToPersonal={jumpToPersonal}
           onJumpToBlood={jumpToBlood}

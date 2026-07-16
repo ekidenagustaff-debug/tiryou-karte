@@ -22,7 +22,7 @@ function formatTime(iso: string): string {
 
 export default function MedicalKarteCard({ record, index }: MedicalKarteCardProps) {
   return (
-    <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+    <div data-anchor-id={`medical-${record.id}`} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">

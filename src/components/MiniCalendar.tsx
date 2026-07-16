@@ -8,8 +8,7 @@ interface MiniCalendarProps {
   personalDates?: string[];
   bloodDates?: string[];
   inbodyDates?: string[];
-  selectedDate: string | null;
-  onSelectDate: (date: string | null) => void;
+  onJumpToMedical?: (date: string) => void;
   onJumpToRace?: (date: string) => void;
   onJumpToPersonal?: (date: string) => void;
   onJumpToBlood?: (date: string) => void;
@@ -28,8 +27,7 @@ export default function MiniCalendar({
   personalDates = [],
   bloodDates = [],
   inbodyDates = [],
-  selectedDate,
-  onSelectDate,
+  onJumpToMedical,
   onJumpToRace,
   onJumpToPersonal,
   onJumpToBlood,
@@ -120,7 +118,6 @@ export default function MiniCalendar({
           const hasBlood = bloodSet.has(dateStr);
           const hasInBody = inbodySet.has(dateStr);
           const hasActivity = hasKarte || hasRace || hasPersonal || hasBlood || hasInBody;
-          const isSelected = selectedDate === dateStr && hasActivity;
           const isToday = dateStr === todayStr;
           const col = i % 7;
 
@@ -142,13 +139,11 @@ export default function MiniCalendar({
               return;
             }
             if (hasKarte) {
-              onSelectDate(isSelected ? null : dateStr);
+              onJumpToMedical?.(dateStr);
             }
           };
 
-          const textColor = isSelected
-            ? "text-white"
-            : col === 0
+          const textColor = col === 0
             ? "text-red-400"
             : col === 6
             ? "text-blue-500"
@@ -163,37 +158,35 @@ export default function MiniCalendar({
               disabled={!hasActivity}
               className={`
                 flex flex-col items-center pt-1 pb-1 px-0.5 w-full rounded transition-colors min-h-[3.25rem]
-                ${isSelected ? "bg-green-600" : ""}
-                ${!isSelected && hasActivity ? "hover:bg-green-50 cursor-pointer" : ""}
-                ${!hasActivity ? "cursor-default" : ""}
-                ${!isSelected && isToday ? "ring-1 ring-green-400" : ""}
+                ${hasActivity ? "hover:bg-green-50 cursor-pointer" : "cursor-default"}
+                ${isToday ? "ring-1 ring-green-400" : ""}
               `}
             >
               <span className={`text-[11px] font-medium leading-none mb-0.5 ${textColor}`}>{day}</span>
 
               <div className="flex flex-col gap-0.5 w-full">
                 {hasKarte && (
-                  <span className={`text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate ${isSelected ? "bg-white/20 text-white" : "bg-green-100 text-green-600"}`}>
+                  <span className="text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate bg-green-100 text-green-600">
                     メディカル
                   </span>
                 )}
                 {hasPersonal && (
-                  <span className={`text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate ${isSelected ? "bg-white/20 text-white" : "bg-blue-100 text-blue-600"}`}>
+                  <span className="text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate bg-blue-100 text-blue-600">
                     パーソナル
                   </span>
                 )}
                 {hasRace && (
-                  <span className={`text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate ${isSelected ? "bg-white/20 text-white" : "bg-orange-100 text-orange-600"}`}>
+                  <span className="text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate bg-orange-100 text-orange-600">
                     大会
                   </span>
                 )}
                 {hasBlood && (
-                  <span className={`text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate ${isSelected ? "bg-white/20 text-white" : "bg-red-100 text-red-600"}`}>
+                  <span className="text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate bg-red-100 text-red-600">
                     血液検査
                   </span>
                 )}
                 {hasInBody && (
-                  <span className={`text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate ${isSelected ? "bg-white/20 text-white" : "bg-purple-100 text-purple-600"}`}>
+                  <span className="text-[6px] font-bold text-center px-0.5 rounded leading-tight w-full truncate bg-purple-100 text-purple-600">
                     InBody
                   </span>
                 )}
@@ -202,14 +195,6 @@ export default function MiniCalendar({
           );
         })}
       </div>
-
-      {selectedDate && (
-        <div className="mt-2 text-center border-t border-gray-50 pt-2">
-          <button onClick={() => onSelectDate(null)} className="text-[10px] text-green-600 hover:underline">
-            すべて表示に戻る
-          </button>
-        </div>
-      )}
     </div>
   );
 }
