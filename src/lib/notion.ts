@@ -182,6 +182,7 @@ export async function getRaceResultsByPlayer(playerId: string): Promise<RaceResu
 
 function pageToPersonalKarte(page: PageObjectResponse): PersonalKarteRecord {
   const p = page.properties;
+  const treatmentDate = extractDate(p["施術日"]);
   return {
     id: page.id,
     playerId: extractRelationId(p["部員"]),
@@ -191,7 +192,7 @@ function pageToPersonalKarte(page: PageObjectResponse): PersonalKarteRecord {
     trainingContent: extractText(p["トレーニング内容"]),
     overallAssessment: extractText(p["総評"]),
     tags: p["タグ"] ? extractTags(p["タグ"]) : [],
-    createdAt: page.created_time,
+    createdAt: treatmentDate ? `${treatmentDate}T00:00:00.000Z` : page.created_time,
   };
 }
 
