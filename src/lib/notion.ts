@@ -183,14 +183,18 @@ export async function getRaceResultsByPlayer(playerId: string): Promise<RaceResu
 function pageToPersonalKarte(page: PageObjectResponse): PersonalKarteRecord {
   const p = page.properties;
   const treatmentDate = extractDate(p["施術日"]);
+  const memo = extractText(p["memo"]) || extractText(p["総評"]);
   return {
     id: page.id,
     playerId: extractRelationId(p["部員"]),
     clientName: extractText(p["クライアント名"]),
     trainerName: extractText(p["担当トレーナー名"]),
+    location: extractText(p["場所"]),
     chiefComplaint: extractText(p["主訴"]),
+    physicalCheck: extractText(p["状態（フィジカルチェック）"]),
+    procedureContent: extractText(p["実施内容"]),
     trainingContent: extractText(p["トレーニング内容"]),
-    overallAssessment: extractText(p["総評"]),
+    memo,
     tags: p["タグ"] ? extractTags(p["タグ"]) : [],
     createdAt: treatmentDate ? `${treatmentDate}T00:00:00.000Z` : page.created_time,
   };

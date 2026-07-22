@@ -50,9 +50,12 @@ export interface PersonalKarteRecord {
   playerId?: string;
   clientName: string;
   trainerName: string;
+  location: string;
   chiefComplaint: string;
+  physicalCheck: string;
+  procedureContent: string;
   trainingContent: string;
-  overallAssessment: string;
+  memo: string;
   tags: string[];
   createdAt: string;
 }
