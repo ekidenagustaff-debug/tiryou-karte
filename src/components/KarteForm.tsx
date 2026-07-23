@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { KarteFormData, NeedleTreatment, TreatmentScope } from "@/types/karte";
+import { KarteFormData, KarteRecord, NeedleTreatment, TreatmentScope } from "@/types/karte";
 
 interface KarteFormProps {
   playerId: string;
   playerName: string;
+  record?: KarteRecord;
   onSubmit: (data: KarteFormData) => Promise<void>;
+  onCancel?: () => void;
 }
 
 const TRAINER_OPTIONS = ["吉見", "桑原", "吉田"];
@@ -22,8 +24,20 @@ const EMPTY = {
   overallAssessment: "",
 };
 
-export default function KarteForm({ playerId, playerName, onSubmit }: KarteFormProps) {
-  const [form, setForm] = useState(EMPTY);
+export default function KarteForm({ playerId, playerName, record, onSubmit, onCancel }: KarteFormProps) {
+  const isEditing = !!record;
+  const [form, setForm] = useState(() =>
+    record
+      ? {
+          trainerName: record.trainerName,
+          chiefComplaint: record.chiefComplaint,
+          needleTreatment: record.needleTreatment,
+          needleLocation: record.needleLocation,
+          treatmentScope: record.treatmentScope,
+          overallAssessment: record.overallAssessment,
+        }
+      : EMPTY
+  );
   const [saving, setSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,11 +60,14 @@ export default function KarteForm({ playerId, playerName, onSubmit }: KarteFormP
         clientName: playerName,
         ...form,
       });
+      if (isEditing) return;
       setForm(EMPTY);
       setSubmitted(true);
       setTimeout(() => setSubmitted(false), 3000);
     } catch {
-      setError("保存に失敗しました。もう一度お試しください。");
+      setError(
+        isEditing ? "更新に失敗しました。もう一度お試しください。" : "保存に失敗しました。もう一度お試しください。"
+      );
     } finally {
       setSaving(false);
     }
@@ -150,19 +167,31 @@ export default function KarteForm({ playerId, playerName, onSubmit }: KarteFormP
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="mt-auto bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-green-300 text-white font-semibold py-3 rounded-lg transition-colors text-sm shadow-sm flex items-center justify-center gap-2"
-      >
-        {saving && (
-          <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-          </svg>
+      <div className={isEditing ? "mt-auto flex gap-2" : "mt-auto"}>
+        {isEditing && (
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={saving}
+            className="flex-1 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-semibold py-3 rounded-lg transition-colors text-sm"
+          >
+            キャンセル
+          </button>
         )}
-        {saving ? "保存中..." : "カルテを保存する"}
-      </button>
+        <button
+          type="submit"
+          disabled={saving}
+          className={`${isEditing ? "flex-1" : "w-full"} bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-green-300 text-white font-semibold py-3 rounded-lg transition-colors text-sm shadow-sm flex items-center justify-center gap-2`}
+        >
+          {saving && (
+            <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            </svg>
+          )}
+          {saving ? (isEditing ? "更新中..." : "保存中...") : isEditing ? "カルテを更新する" : "カルテを保存する"}
+        </button>
+      </div>
 
       {submitted && (
         <p className="text-center text-sm text-green-600 font-medium -mt-2">✓ Notionに保存しました</p>

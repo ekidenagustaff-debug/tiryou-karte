@@ -112,6 +112,26 @@ export async function createKarteRecord(data: KarteFormData): Promise<KarteRecor
   return pageToKarte(response);
 }
 
+export async function updateKarteRecord(id: string, data: KarteFormData): Promise<KarteRecord> {
+  const response = (await notion.pages.update({
+    page_id: id,
+    properties: {
+      "クライアント名": { title: richText(data.clientName) },
+      "担当トレーナー名": { select: { name: data.trainerName } },
+      "主訴": { rich_text: richText(data.chiefComplaint) },
+      "針治療の有無": data.needleTreatment
+        ? { select: { name: data.needleTreatment } }
+        : { select: null },
+      "針治療の箇所": { rich_text: richText(data.needleLocation) },
+      "治療範囲": data.treatmentScope
+        ? { select: { name: data.treatmentScope } }
+        : { select: null },
+      "総評": { rich_text: richText(data.overallAssessment) },
+    },
+  })) as PageObjectResponse;
+  return pageToKarte(response);
+}
+
 export async function getKartesByPlayer(playerId: string): Promise<KarteRecord[]> {
   const response = await notion.databases.query({
     database_id: DATABASE_ID,

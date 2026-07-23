@@ -3,6 +3,7 @@ import { KarteRecord } from "@/types/karte";
 interface MedicalKarteCardProps {
   record: KarteRecord;
   index: number;
+  onEdit?: (record: KarteRecord) => void;
 }
 
 function formatDate(iso: string): string {
@@ -20,7 +21,7 @@ function formatTime(iso: string): string {
   return d.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
 }
 
-export default function MedicalKarteCard({ record, index }: MedicalKarteCardProps) {
+export default function MedicalKarteCard({ record, index, onEdit }: MedicalKarteCardProps) {
   return (
     <div data-anchor-id={`medical-${record.id}`} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-3">
@@ -32,6 +33,17 @@ export default function MedicalKarteCard({ record, index }: MedicalKarteCardProp
             {formatDate(record.createdAt)} {formatTime(record.createdAt)}
           </span>
         </div>
+        {onEdit && (
+          <button
+            onClick={() => onEdit(record)}
+            className="text-gray-400 hover:text-green-600 p-1 -m-1 transition-colors"
+            aria-label="編集"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-3">
