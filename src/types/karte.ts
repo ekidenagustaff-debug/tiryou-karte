@@ -23,6 +23,7 @@ export interface KarteFormData {
   needleLocation: string;
   treatmentScope: TreatmentScope;
   overallAssessment: string;
+  treatmentDate: string; // "YYYY-MM-DD"
 }
 
 export interface PlayerInfo {

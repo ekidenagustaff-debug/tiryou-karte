@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
       needleLocation,
       treatmentScope,
       overallAssessment,
+      treatmentDate,
     } = body;
 
     if (!playerId?.trim() || !clientName?.trim() || !trainerName?.trim()) {
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
       needleLocation: needleTreatment === "あり" ? (needleLocation ?? "") : "",
       treatmentScope: treatmentScope ?? "",
       overallAssessment: overallAssessment ?? "",
+      treatmentDate: treatmentDate || new Date().toISOString().slice(0, 10),
     });
 
     return NextResponse.json(record, { status: 201 });

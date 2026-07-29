@@ -15,14 +15,21 @@ const TRAINER_OPTIONS = ["吉見", "桑原", "吉田"];
 const NEEDLE_OPTIONS: NeedleTreatment[] = ["あり", "なし"];
 const SCOPE_OPTIONS: TreatmentScope[] = ["全身治療", "部分治療"];
 
-const EMPTY = {
-  trainerName: "",
-  chiefComplaint: "",
-  needleTreatment: "" as NeedleTreatment,
-  needleLocation: "",
-  treatmentScope: "" as TreatmentScope,
-  overallAssessment: "",
-};
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function emptyForm() {
+  return {
+    trainerName: "",
+    chiefComplaint: "",
+    needleTreatment: "" as NeedleTreatment,
+    needleLocation: "",
+    treatmentScope: "" as TreatmentScope,
+    overallAssessment: "",
+    treatmentDate: today(),
+  };
+}
 
 export default function KarteForm({ playerId, playerName, record, onSubmit, onCancel }: KarteFormProps) {
   const isEditing = !!record;
@@ -35,8 +42,9 @@ export default function KarteForm({ playerId, playerName, record, onSubmit, onCa
           needleLocation: record.needleLocation,
           treatmentScope: record.treatmentScope,
           overallAssessment: record.overallAssessment,
+          treatmentDate: record.createdAt.slice(0, 10),
         }
-      : EMPTY
+      : emptyForm()
   );
   const [saving, setSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -51,7 +59,7 @@ export default function KarteForm({ playerId, playerName, record, onSubmit, onCa
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.trainerName.trim()) return;
+    if (!form.trainerName.trim() || !form.treatmentDate) return;
     setSaving(true);
     setError(null);
     try {
@@ -61,7 +69,7 @@ export default function KarteForm({ playerId, playerName, record, onSubmit, onCa
         ...form,
       });
       if (isEditing) return;
-      setForm(EMPTY);
+      setForm(emptyForm());
       setSubmitted(true);
       setTimeout(() => setSubmitted(false), 3000);
     } catch {
@@ -75,6 +83,21 @@ export default function KarteForm({ playerId, playerName, record, onSubmit, onCa
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5 h-full">
+      {/* 施術日 */}
+      <div className="flex flex-col gap-1">
+        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          施術日 <span className="text-red-400">*</span>
+        </label>
+        <input
+          type="date"
+          name="treatmentDate"
+          value={form.treatmentDate}
+          onChange={handleChange}
+          required
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent bg-white text-gray-800"
+        />
+      </div>
+
       {/* 担当トレーナー名 */}
       <div className="flex flex-col gap-1">
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">

@@ -17,6 +17,7 @@ export async function PUT(
       needleLocation,
       treatmentScope,
       overallAssessment,
+      treatmentDate,
     } = body;
 
     if (!clientName?.trim() || !trainerName?.trim()) {
@@ -35,6 +36,7 @@ export async function PUT(
       needleLocation: needleTreatment === "あり" ? (needleLocation ?? "") : "",
       treatmentScope: treatmentScope ?? "",
       overallAssessment: overallAssessment ?? "",
+      treatmentDate: treatmentDate || "",
     });
 
     return NextResponse.json(record);

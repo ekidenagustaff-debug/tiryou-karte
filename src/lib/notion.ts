@@ -42,6 +42,7 @@ function extractDate(prop: PageObjectResponse["properties"][string]): string {
 
 function pageToKarte(page: PageObjectResponse): KarteRecord {
   const p = page.properties;
+  const treatmentDate = extractDate(p["施術日"]);
   return {
     id: page.id,
     playerId: extractRelationId(p["部員"]),
@@ -52,7 +53,7 @@ function pageToKarte(page: PageObjectResponse): KarteRecord {
     needleLocation: extractText(p["針治療の箇所"]),
     treatmentScope: extractText(p["治療範囲"]) as KarteRecord["treatmentScope"],
     overallAssessment: extractText(p["総評"]),
-    createdAt: page.created_time,
+    createdAt: treatmentDate ? `${treatmentDate}T00:00:00.000Z` : page.created_time,
   };
 }
 
@@ -104,6 +105,7 @@ export async function createKarteRecord(data: KarteFormData): Promise<KarteRecor
         ? { select: { name: data.treatmentScope } }
         : { select: null },
       "総評": { rich_text: richText(data.overallAssessment) },
+      "施術日": data.treatmentDate ? { date: { start: data.treatmentDate } } : { date: null },
       "部員": {
         relation: [{ id: data.playerId }],
       },
@@ -127,6 +129,7 @@ export async function updateKarteRecord(id: string, data: KarteFormData): Promis
         ? { select: { name: data.treatmentScope } }
         : { select: null },
       "総評": { rich_text: richText(data.overallAssessment) },
+      "施術日": data.treatmentDate ? { date: { start: data.treatmentDate } } : { date: null },
     },
   })) as PageObjectResponse;
   return pageToKarte(response);
@@ -142,7 +145,9 @@ export async function getKartesByPlayer(playerId: string): Promise<KarteRecord[]
     sorts: [{ timestamp: "created_time", direction: "descending" }],
     page_size: 100,
   });
-  return (response.results as PageObjectResponse[]).map(pageToKarte);
+  const records = (response.results as PageObjectResponse[]).map(pageToKarte);
+  // 施術日を優先表示しているため、並び順もcreated_timeではなく表示日時(createdAt)基準に揃える
+  return records.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 export async function getRecentKartes(days = 6): Promise<KarteRecord[]> {
